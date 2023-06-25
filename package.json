@@ -10,9 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "discord.js": "^14.11.0",
     "dotenv": "^16.1.4",
+    "mongodb": "^5.6.0",
     "node-fetch": "^3.3.1",
     "openai": "^3.3.0"
   },
-  "type": "script"
+  "type": "commonjs"
 }

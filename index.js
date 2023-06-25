@@ -1,28 +1,50 @@
-const { Configuration, OpenAIApi } = require('openai');
-
 require('dotenv').config();
+const { Client,GatewayIntentBits, Routes,REST} = require('discord.js');//discord main importer
+const commands = require('./commands.js');
+const updateSocialCredit = require('./db');
 
-const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,                                   //client imports(important)
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.DirectMessageTyping
+  ]
 });
 
+const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_API_KEY);
 
-const dsMessage = "i love you";
-const openai = new OpenAIApi(configuration);
+client.login(process.env.DISCORD_API_KEY);
+//login
 
-async function asyncFunc (){
-  const chat_completion = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo-0301",
-    messages: [{ role: "user", content: `i will provide you a message, 
-    and you will need to rate it from 10 to -10 using following criteries: 
-    intelligibility, toxicity, length and your personal opinion. 
-    You need to give ONLY average rating, without any other text and without words like
-    intelligibility, toxicity, length and your personal opinion. 
-    Here is the message : ${dsMessage}` }],
-  });
-  const rating = chat_completion.data.choices[0].message.content;
-  await console.log(rating);
+client.on('ready',()=>{                                     //первый запуск
+  console.log('bot has logged in');
+})
+
+const commandCreate = {
+  'showcredit': async (interaction)=> {
+    const memberID = interaction.options.data[0].value;  //<@1118288796019081376>
+    const currentSocialCredit = await updateSocialCredit(memberID, 0);
+    await interaction.reply (`Social credit of this player : ${currentSocialCredit}`);
+  },
 }
 
+client.on('interactionCreate',async (interaction)=>{
+  if(!interaction.isChatInputCommand()) return;
+  commandCreate[interaction.commandName](interaction);
+});                         //slash command interaction
 
-asyncFunc();
+
+
+(async () => {
+  console.log('Started refreshing application (/) commands.');
+  try{
+    await rest.put(Routes.applicationCommands(process.env.CLIENT_ID),
+        { body: commands });
+    console.log('Successfully reloaded application (/) commands.');
+  }catch (err){
+    throw err;
+  }
+})();                       //slash command builder
+
