@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client,GatewayIntentBits, Routes,REST} = require('discord.js');//discord main importer
 const commands = require('./commands.js');
 const updateSocialCredit = require('./db');
+const gptPrompt = require('./prompt');
 
 const client = new Client({
   intents: [
@@ -24,7 +25,7 @@ client.on('ready',()=>{                                     //первый за�
 
 const commandCreate = {
   'showcredit': async (interaction)=> {
-    const memberID = interaction.options.data[0].value;  //<@1118288796019081376>
+    const memberID = await parseInt(interaction.options.data[0].value.replace(/\D+/g, ''));  //<@1118288796019081376>
     const currentSocialCredit = await updateSocialCredit(memberID, 0);
     await interaction.reply (`Social credit of this player : ${currentSocialCredit}`);
   },
@@ -35,7 +36,13 @@ client.on('interactionCreate',async (interaction)=>{
   commandCreate[interaction.commandName](interaction);
 });                         //slash command interaction
 
-
+client.on('messageCreate', async (interaction)=>{
+  if (interaction.author.id !== '1118288796019081376') {
+    const addedSocialCredit = await gptPrompt(interaction.content)
+    console.log(addedSocialCredit);
+    const currentSocialCredit = await updateSocialCredit(parseInt(interaction.author.id), parseInt(addedSocialCredit));
+  }
+});
 
 (async () => {
   console.log('Started refreshing application (/) commands.');
